@@ -1,6 +1,11 @@
 # Release Notes
 
+### 1.6
+* updated to .NET 6.0, adapted to Stardew Valley 1.6 and SMAPI 4.0
+* 更新至.NET 6.0，适配 星露谷1.6 和 SMAPI 4.0
+
 ### 1.5
+
 * Compatibility with SMAPI 3.0 thanks to PathosChild.
 
 ### 1.5-beta

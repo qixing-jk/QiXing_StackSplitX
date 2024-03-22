@@ -1,6 +1,8 @@
 StackSplitX
 =========
 
+[Telegram group](https://t.me/qixing_chat) (also a way to contact support)	[中文文档](./README_ZH.md)
+
 This mod lets you split stacks/buy items in a custom amount by overriding the default *Shift+Right-Click* behaviour.
 
 ![Demo](Images/Demo.gif)
