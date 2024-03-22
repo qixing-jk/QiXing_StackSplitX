@@ -1,10 +1,10 @@
 {
-  "Name": "StackSplitX",
-  "Author": "tstaples (aka Catman)",
-  "Version": "1.5.0",
+  "Name": "QiXing_StackSplitX",
+  "Author": "QiXing",
+  "Version": "1.6.0",
   "Description": "Custom Stack splitting.",
-  "UniqueID": "tstaples.StackSplitX",
-  "EntryDll": "StackSplitX.dll",
-  "MinimumApiVersion": "2.10.1",
-  "UpdateKeys": [ "Nexus:798", "GitHub:tstaples/StackSplitX" ]
+  "UniqueID": "qixing.StackSplitX",
+  "EntryDll": "QiXing_StackSplitX.dll",
+  "MinimumApiVersion": "4.0.0",
+  "UpdateKeys": [ "Nexus:1205", "GitHub:qixing-jk/QiXing_StackSplitX" ]
 }

@@ -1,10 +1,13 @@
 ﻿using Microsoft.Xna.Framework;
 using StardewModdingAPI;
+using StardewModdingAPI.Events;
 using StardewValley;
 using StardewValley.Menus;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
+using static StardewValley.Menus.CharacterCustomization;
 
 namespace StackSplitX.MenuHandlers
 {
@@ -43,13 +46,13 @@ namespace StackSplitX.MenuHandlers
         public override void PerformAction(int amount, Point clickLocation)
         {
             var heldItem = this.Reflection.GetField<Item>(this.NativeShopMenu, "heldItem").GetValue();
-            var priceAndStockField = this.Reflection.GetField<Dictionary<Item, int[]>>(this.NativeShopMenu, "itemPriceAndStock");
-            var priceAndStockMap = priceAndStockField.GetValue();
+            var priceAndStockField = this.Reflection.GetField<Dictionary<ISalable, ItemStockInformation>>(this.NativeShopMenu, "itemPriceAndStock");
+            Dictionary<Item, ItemStockInformation> priceAndStockMap = priceAndStockField.GetValue().ToDictionary(item=>(Item)item.Key, item => item.Value);
             Debug.Assert(priceAndStockMap.ContainsKey(this.ClickedItem));
 
             // Calculate the number to purchase
-            int numInStock = priceAndStockMap[this.ClickedItem][1];
-            int itemPrice = priceAndStockMap[this.ClickedItem][0];
+            int numInStock = priceAndStockMap[this.ClickedItem].Stock;
+            int itemPrice = priceAndStockMap[this.ClickedItem].Price;
             int currentMonies = ShopMenu.getPlayerCurrencyAmount(Game1.player, this.ShopCurrencyType);
             amount = Math.Min(Math.Min(amount, currentMonies / itemPrice), Math.Min(numInStock, this.ClickedItem.maximumStackSize()));
 
@@ -66,13 +69,13 @@ namespace StackSplitX.MenuHandlers
             // Try to purchase the item - method returns true if it should be removed from the shop since there's no more.
             var purchaseMethodInfo = this.Reflection.GetMethod(this.NativeShopMenu, "tryToPurchaseItem");
             int index = BuyAction.GetClickedItemIndex(this.Reflection, this.NativeShopMenu, clickLocation);
-            if (purchaseMethodInfo.Invoke<bool>(this.ClickedItem, heldItem, amount, clickLocation.X, clickLocation.Y, index))
+            if (purchaseMethodInfo.Invoke<bool>(this.ClickedItem, heldItem, amount, clickLocation.X, clickLocation.Y))
             {
                 this.Monitor.DebugLog($"Purchase of {this.ClickedItem.Name} successful");
 
                 // remove the purchased item from the stock etc.
                 priceAndStockMap.Remove(this.ClickedItem);
-                priceAndStockField.SetValue(priceAndStockMap);
+                priceAndStockField.SetValue(priceAndStockMap.ToDictionary(item => (ISalable)item.Key, item => item.Value));
 
                 var itemsForSaleField = this.Reflection.GetField<List<Item>>(this.NativeShopMenu, "forSale");
                 var itemsForSale = itemsForSaleField.GetValue();
@@ -88,7 +91,7 @@ namespace StackSplitX.MenuHandlers
         /// <returns>The clicked item or null if none was clicked.</returns>
         public static Item GetClickedShopItem(IReflectionHelper reflection, ShopMenu shopMenu, Point p)
         {
-            var itemsForSale = reflection.GetField<List<Item>>(shopMenu, "forSale").GetValue();
+            var itemsForSale = reflection.GetField<List<ISalable>>(shopMenu, "forSale").GetValue().ConvertAll(item => (Item)item);
             int index = GetClickedItemIndex(reflection, shopMenu, p);
             Debug.Assert(index < itemsForSale.Count);
             return index >= 0 ? itemsForSale[index] : null;
