@@ -8,7 +8,7 @@ using StardewModdingAPI;
 namespace StackSplitX
 {
     /// <summary>Manages the UI for inputting the stack amount.</summary>
-    public class StackSplitMenu
+    public class StackSplitMenu: IClickableMenu
     {
         /// <summary>Delegate declaration for when text is submitted.</summary>
         /// <param name="input">The submitted text.</param>
@@ -29,9 +29,9 @@ namespace StackSplitX
         /// <summary>The OK button.</summary>
         private ClickableTextureComponent OKButton;
 
-        /// <summary>Constructs an instance.</summary>
+        /// <summary>Constructs an instance. 输入菜单创建</summary>
         /// <param name="inputHelper">The SMAPI input helper.</param>
-        /// <param name="textSubmittedCallback">The callback for when the text is submitted.</param>
+        /// <param name="textSubmittedCallback">The callback for when the text is submitted. 提交后的回调函数</param>
         /// <param name="heldStackAmount">The default stack amount to set the text to.</param>
         public StackSplitMenu(TextSubmittedDelegate textSubmittedCallback, int heldStackAmount, IInputHelper inputHelper)
         {
@@ -69,9 +69,9 @@ namespace StackSplitX
             Game1.keyboardDispatcher.Subscriber = null;
         }
 
-        /// <summary>Draws the interface.</summary>
+        /// <summary>Draws the interface. 绘制界面</summary>
         /// <param name="b">Spritebatch to draw with.</param>
-        public void draw(SpriteBatch b)
+        public override void draw(SpriteBatch b)
         {
             this.InputTextBox.Draw(b);
             this.OKButton.draw(b);
@@ -92,10 +92,10 @@ namespace StackSplitX
             }
         }
 
-        /// <summary>Handles left clicks to check if the OK button was clicked.</summary>
+        /// <summary>Handles left clicks to check if the OK button was clicked. 处理左键点击菜单</summary>
         /// <param name="x">Mouse x position.</param>
         /// <param name="y">Mouse y position.</param>
-        public void ReceiveLeftClick(int x, int y)
+        public override void receiveLeftClick(int x, int y, bool playSound = true)
         {
             if (this.OKButton.containsPoint(x, y))
             {
@@ -104,11 +104,12 @@ namespace StackSplitX
             }
         }
 
-        /// <summary>If this point lies in either the input box or OK button.</summary>
+        /// <summary>If this point lies in either the input box or OK button. 判断点击位置是否为菜单范围内</summary>
         /// <param name="x">X position.</param>
         /// <param name="y">Y position.</param>
         public bool ContainsPoint(int x, int y)
         {
+            // TODO: 判断疑似不准确
             return (this.OKButton.containsPoint(x, y) || this.InputTextBox.ContainsPoint(x, y));
         }
 

@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "StackSplitX": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}

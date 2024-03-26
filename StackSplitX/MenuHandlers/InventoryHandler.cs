@@ -75,7 +75,7 @@ namespace StackSplitX.MenuHandlers
             return this.Bounds.Contains(mousePos);
         }
 
-        /// <summary>Broad phase check to see if the inventory interface was clicked.</summary>
+        /// <summary>Broad phase check to see if the inventory interface was clicked. 判断点击的是否为背包</summary>
         /// <param name="mouseX">Mouse X position.</param>
         /// <param name="mouseY">Mouse Y position.</param>
         public bool WasClicked(int mouseX, int mouseY)
@@ -123,24 +123,25 @@ namespace StackSplitX.MenuHandlers
 
             // Run native click code to get the selected item
             heldItem = this.NativeInventory.rightClick(this.SelectedItemPosition.X, this.SelectedItemPosition.Y, heldItem);
-            Debug.Assert(heldItem != null);
+            // Debug.Assert(heldItem != null);
+            if (heldItem != null)
+            {
+                // Clamp the amount to the total number of items
+                stackAmount = (int)MathHelper.Clamp(stackAmount, 0, hoveredItems);
+                heldItem.Stack = Math.Min(maxStack, heldItems + stackAmount);
+                heldItem = heldItem.Stack > 0 ? heldItem : null;
 
-            // Clamp the amount to the total number of items
-            stackAmount = (int)MathHelper.Clamp(stackAmount, 0, hoveredItems);
-            heldItem.Stack = Math.Min(maxStack, heldItems + stackAmount);
-            heldItem = heldItem.Stack > 0 ? heldItem : null;
+                // If we couldn't grab all that we wanted then only subtract the amount we were able to grab
+                int overflow = Math.Max((heldItems + stackAmount) - maxStack, 0);
+                hoveredItem.Stack = hoveredItems - (stackAmount - overflow);
 
-            // If we couldn't grab all that we wanted then only subtract the amount we were able to grab
-            int overflow = Math.Max((heldItems + stackAmount) - maxStack, 0);
-            hoveredItem.Stack = hoveredItems - (stackAmount - overflow);
+                // Remove the item from the inventory as it's now all being held.
+                if (hoveredItem.Stack == 0)
+                    RemoveItemFromInventory(hoveredItem);
 
-            // Remove the item from the inventory as it's now all being held.
-            if (hoveredItem.Stack == 0)
-                RemoveItemFromInventory(hoveredItem);
-
-            // Update the native fields
-            Game1.player.CursorSlotItem = heldItem;
-
+                // Update the native fields
+                Game1.player.CursorSlotItem = heldItem;
+            }
             // Null it out now that we're done with this operation
             this.HoveredItem = null;
         }

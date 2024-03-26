@@ -32,29 +32,29 @@ namespace StackSplitX
 
         /// <summary>Regular text color.</summary>
         public Color TextColor { get; set; } = Game1.textColor;
-        
+
         /// <summary>Text color when the text is highlighted. This should contrast with HighlightColor.</summary>
         public Color HighlightTextColor { get; set; } = Color.White;
-        
+
         /// <summary>The background color of the highlighted text.</summary>
         public Color HighlightColor { get; set; } = Color.Blue;
-        
+
         /// <summary>The text font.</summary>
         public SpriteFont Font { get; set; } = Game1.smallFont;
-        
+
         /// <summary>Is the text selected? Unused.</summary>
         public bool Selected { get; set; } // IKeyboardSubscriber
-        
+
         /// <summary>Allow numbers only to be input.</summary>
         public bool NumbersOnly { get; set; } = false;
-        
+
         /// <summary>Should the text be highlighted by default on construction so that additional input clears the existing text.</summary>
         public bool HighlightByDefault { get; set; } = true; // TODO: make config option
-        
+
         /// <summary>The current text that was input.</summary>
         public string Text { get; private set; }
 
-        /// <summary>The texture used to draw the highlight background.</summary>
+        /// <summary>The texture used to draw the highlight background. 高光纹理背景</summary>
         private readonly Texture2D HighlightTexture;
 
         /// <summary>Is the text currently highlighted.</summary>
@@ -63,10 +63,10 @@ namespace StackSplitX
         /// <summary>Maximum allowed characters.</summary>
         private readonly int CharacterLimit = 0;
 
-        /// <summary>The caret used for text navigation.</summary>
+        /// <summary>The caret used for text navigation. 光标</summary>
         private readonly Caret Caret;
 
-        /// <summary>Constructs an instance.</summary>
+        /// <summary>Constructs an instance. 输入框</summary>
         /// <param name="inputHelper">The SMAPI input helper.</param>
         /// <param name="characterLimit">The character limit.</param>
         /// <param name="defaultText">The default text to display.</param>
@@ -75,7 +75,7 @@ namespace StackSplitX
             this.InputHelper = inputHelper;
             this.CharacterLimit = characterLimit;
             this.Caret = new Caret(characterLimit);
-
+            // 插入默认内容
             AppendString(defaultText);
 
             // Create a 1x1 texture that we will scale up to draw the highlight
@@ -119,7 +119,7 @@ namespace StackSplitX
             }
         }
 
-        /// <summary>Callback for when 'command' characters are recieved.</summary>
+        /// <summary>Callback for when 'command' characters are recieved. 处理命令输入</summary>
         /// <param name="command">The command recieved.</param>
         public void RecieveCommandInput(char command)
         {
@@ -139,10 +139,11 @@ namespace StackSplitX
             }
         }
 
-        /// <summary>Handles special input for things like text navigation and manipulation.</summary>
+        /// <summary>Handles special input for things like text navigation and manipulation. 处理特殊输入</summary>
         /// <param name="key">The key received.</param>
         public void RecieveSpecialInput(Keys key)
         {
+            // TODO: 疑似无法触发
             switch (key)
             {
                 case Keys.Left:
@@ -198,9 +199,11 @@ namespace StackSplitX
             // Part of the spritesheet containing the texture we want to draw
             var menuTextureSourceRect = new Rectangle(0, 256, 60, 60);
             IClickableMenu.drawTextureBox(spriteBatch, Game1.menuTexture, menuTextureSourceRect, (int)this.Position.X, (int)this.Position.Y, (int)this.Extent.X, (int)this.Extent.Y, Color.White);
-
+            // 文本尺寸
             var textDimensions = this.Font.MeasureString(this.Text.Length > 0 ? this.Text : " ");
+            // 文本宽度
             var letterWidth = (textDimensions.X / (this.Text.Length > 0 ? this.Text.Length : 1));
+            // 文本位置
             var textPosition = this.Position + new Vector2(Game1.tileSize / 4, Game1.tileSize / 3);
 
             // Draw the highlight texture
@@ -219,10 +222,10 @@ namespace StackSplitX
             int caretX = ((int)letterWidth * this.Caret.Index);
             // Offset by a small amount when were not at the end so the caret doesn't go on top of the letter
             caretX = (this.Caret.Index < this.Text.Length) ? caretX - Game1.pixelZoom : caretX;
-            spriteBatch.Draw(Game1.staminaRect, 
-                new Rectangle((int)this.Position.X + Game1.tileSize / 4 + caretX + Game1.pixelZoom, 
-                              (int)this.Position.Y + Game1.tileSize / 3 - Game1.pixelZoom, 4, 
-                              (int)textDimensions.Y), 
+            spriteBatch.Draw(Game1.staminaRect,
+                new Rectangle((int)this.Position.X + Game1.tileSize / 4 + caretX + Game1.pixelZoom,
+                              (int)this.Position.Y + Game1.tileSize / 3 - Game1.pixelZoom, 4,
+                              (int)textDimensions.Y),
                 this.TextColor);
         }
 

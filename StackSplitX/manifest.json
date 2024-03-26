@@ -1,10 +1,10 @@
 {
-  "Name": "QiXing_StackSplitX",
+  "Name": "StackSplitX",
   "Author": "QiXing",
   "Version": "1.6.0",
   "Description": "Custom Stack splitting.",
   "UniqueID": "qixing.StackSplitX",
-  "EntryDll": "QiXing_StackSplitX.dll",
+  "EntryDll": "StackSplitX.dll",
   "MinimumApiVersion": "4.0.0",
   "UpdateKeys": [ "Nexus:1205", "GitHub:qixing-jk/QiXing_StackSplitX" ]
 }

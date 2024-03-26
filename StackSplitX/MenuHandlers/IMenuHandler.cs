@@ -24,6 +24,8 @@ namespace StackSplitX.MenuHandlers
 
     public interface IMenuHandler
     {
+        EInputHandled HandleStatus { get; set; }
+
         /// <summary>Checks if the menu this handler wraps is open.</summary>
         /// <returns>True if it is open, false otherwise.</returns>
         bool IsOpen();
@@ -49,6 +51,8 @@ namespace StackSplitX.MenuHandlers
 
         /// <summary>Handle user input.</summary>
         /// <param name="button">The pressed button.</param>
-        EInputHandled HandleInput(SButton button);
+        void HandleInput(SButton button);
+
+        void HandleSplitMenu();
     }
 }

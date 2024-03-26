@@ -69,6 +69,7 @@ namespace StackSplitX.MenuHandlers
             // Try to purchase the item - method returns true if it should be removed from the shop since there's no more.
             var purchaseMethodInfo = this.Reflection.GetMethod(this.NativeShopMenu, "tryToPurchaseItem");
             int index = BuyAction.GetClickedItemIndex(this.Reflection, this.NativeShopMenu, clickLocation);
+            Debug.Assert(index >= 0);
             if (purchaseMethodInfo.Invoke<bool>(this.ClickedItem, heldItem, amount, clickLocation.X, clickLocation.Y))
             {
                 this.Monitor.DebugLog($"Purchase of {this.ClickedItem.Name} successful");
@@ -77,7 +78,7 @@ namespace StackSplitX.MenuHandlers
                 priceAndStockMap.Remove(this.ClickedItem);
                 priceAndStockField.SetValue(priceAndStockMap.ToDictionary(item => (ISalable)item.Key, item => item.Value));
 
-                var itemsForSaleField = this.Reflection.GetField<List<Item>>(this.NativeShopMenu, "forSale");
+                var itemsForSaleField = this.Reflection.GetField<List<ISalable>>(this.NativeShopMenu, "forSale");
                 var itemsForSale = itemsForSaleField.GetValue();
                 itemsForSale.Remove(this.ClickedItem);
                 itemsForSaleField.SetValue(itemsForSale);

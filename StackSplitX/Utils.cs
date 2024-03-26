@@ -1,4 +1,5 @@
-﻿using StardewModdingAPI;
+﻿using Newtonsoft.Json;
+using StardewModdingAPI;
 
 namespace StackSplitX
 {
@@ -6,9 +7,14 @@ namespace StackSplitX
     {
         public static void DebugLog(this IMonitor monitor, string message, LogLevel level = LogLevel.Trace)
         {
-#if DEBUG
+            #if DEBUG
             monitor.Log(message, level);
-#endif
+            #endif
+        }
+
+        public static string ToJson(object input)
+        {
+            return JsonConvert.SerializeObject(input);
         }
     }
 }

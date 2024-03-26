@@ -1,8 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection.Emit;
+using System.Threading;
 using StackSplitX.MenuHandlers;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
+using StardewModdingAPI.Utilities;
 using StardewValley;
 using StardewValley.Menus;
 
@@ -10,16 +14,22 @@ namespace StackSplitX
 {
     public class StackSplitX : Mod
     {
+        /// <summary>Mod配置项</summary>
+        private ModConfig Config;
+
+        /// <summary>快捷键绑定列表</summary>
+        public static List<KeybindList> ToggleKey = new List<KeybindList>();
+
         /// <summary>Are we subscribed to the events listened to while a handler is active.</summary>
         private bool IsSubscribed = false;
 
-        /// <summary>Handlers mapped to the type of menu they handle.</summary>
+        /// <summary>Handlers mapped to the type of menu they handle. 存储菜单类型和处理程序之间的对应关系</summary>
         private Dictionary<Type, IMenuHandler> MenuHandlers;
 
         /// <summary>The handler for the current menu.</summary>
         private IMenuHandler CurrentMenuHandler;
 
-        /// <summary>Used to avoid resize events sent to menu changed.</summary>
+        /// <summary>Used to avoid resize events sent to menu changed. 是否为调整大小事件</summary>
         private bool WasResizeEvent = false;
 
         /// <summary>An index incremented on every tick and reset every 60th tick (0–59).</summary>
@@ -32,9 +42,21 @@ namespace StackSplitX
         /// <param name="helper">Mod helper.</param>
         public override void Entry(IModHelper helper)
         {
+            /// 添加事件处理程序
             helper.Events.Display.MenuChanged += OnMenuChanged;
             helper.Events.Display.WindowResized += OnWindowResized;
             helper.Events.GameLoop.UpdateTicked += OnUpdateTicked;
+#if DEBUG
+            helper.Events.Specialized.UnvalidatedUpdateTicked += OnUnvalidatedUpdateTicked;
+#endif
+
+
+            this.Config = this.Helper.ReadConfig<ModConfig>();
+            String[] ToggleAuxiliaryKey = this.Config.ToggleAuxiliaryKey;
+            foreach (string key in ToggleAuxiliaryKey)
+            {
+                StackSplitX.ToggleKey.Add(KeybindList.Parse($"{key} + MouseRight"));
+            }
 
             this.MenuHandlers = new Dictionary<Type, IMenuHandler>()
             {
@@ -46,12 +68,26 @@ namespace StackSplitX
             };
         }
 
+        private void OnUnvalidatedUpdateTicked(object sender, UnvalidatedUpdateTickedEventArgs e)
+        {
+            if (e.IsMultipleOf(120))
+            {
+                this.Monitor.DebugLog($"{LogExtensions.ToJson(this.CurrentMenuHandler?.HandleStatus)}");
+                this.Monitor.DebugLog($"getMouse {LogExtensions.ToJson(Game1.getMouseX())} {LogExtensions.ToJson(Game1.getMouseY())}");
+                this.Monitor.DebugLog($"getOldMouse {LogExtensions.ToJson(Game1.getOldMouseX())} {LogExtensions.ToJson(Game1.getOldMouseY())}");
+                this.Monitor.DebugLog($"{LogExtensions.ToJson(this.Helper.Input.GetCursorPosition())}");
+            }
+        }
+
         /// <summary>Subscribes to the events we care about when a handler is active.</summary>
         private void SubscribeEvents()
         {
             if (!this.IsSubscribed)
             {
-                Helper.Events.Input.ButtonPressed += OnButtonPressed;
+                // 按下任何按钮（键盘/鼠标/控制器）
+                //Helper.Events.Input.ButtonPressed += OnButtonPressed;
+                Helper.Events.Input.ButtonsChanged += OnButtonsChanged;
+                // 渲染事件，为了渲染菜单
                 Helper.Events.Display.Rendered += OnRendered;
 
                 this.IsSubscribed = true;
@@ -63,7 +99,9 @@ namespace StackSplitX
         {
             if (this.IsSubscribed)
             {
-                Helper.Events.Input.ButtonPressed -= OnButtonPressed;
+                //Helper.Events.Input.ButtonPressed -= OnButtonPressed;
+                Helper.Events.Input.ButtonsChanged -= OnButtonsChanged;
+
                 Helper.Events.Display.Rendered -= OnRendered;
 
                 this.IsSubscribed = false;
@@ -80,7 +118,7 @@ namespace StackSplitX
             this.TickResizedOn = this.CurrentUpdateTick;
         }
 
-        /// <summary>Raised after a game menu is opened, closed, or replaced.</summary>
+        /// <summary>Raised after a game menu is opened, closed, or replaced. 菜单状态改变</summary>
         /// <param name="sender">The event sender.</param>
         /// <param name="e">The event data.</param>
         private void OnMenuChanged(object sender, MenuChangedEventArgs e)
@@ -91,7 +129,7 @@ namespace StackSplitX
                 // close the current handler and unsubscribe from the events
                 if (this.CurrentMenuHandler != null)
                 {
-                    //this.Monitor.Log("[OnMenuClosed] Closing current menu handler", LogLevel.Trace);
+                    this.Monitor.DebugLog($"[OnMenuClosed] Closing current menu handler: {this.CurrentMenuHandler}", LogLevel.Trace);
                     this.CurrentMenuHandler.Close();
                     this.CurrentMenuHandler = null;
 
@@ -110,16 +148,18 @@ namespace StackSplitX
 
 
             // switch the currently handler to the one for the new menu type
-            this.Monitor.DebugLog($"Menu changed from {e.OldMenu} to {e.NewMenu}");
+            this.Monitor.Log($"Menu changed from {e.OldMenu} to {e.NewMenu}");
             var newMenuType = e.NewMenu.GetType();
+            // 判断新窗口是否为可处理的窗口类型
             if (this.MenuHandlers.ContainsKey(newMenuType))
             {
-                // Close the current one of it's valid
+                // Close the current one of it's valid 关闭上一个菜单处理程序
                 if (this.CurrentMenuHandler != null)
                 {
                     this.CurrentMenuHandler.Close();
                 }
-
+                // 开启新的菜单处理程序
+                this.Monitor.DebugLog($"{CurrentMenuHandler} start processing");
                 this.CurrentMenuHandler = this.MenuHandlers[newMenuType];
                 this.CurrentMenuHandler.Open(e.NewMenu);
 
@@ -127,32 +167,25 @@ namespace StackSplitX
             }
         }
 
-        /// <summary>Raised after the player presses a button on the keyboard, controller, or mouse.</summary>
-        private void OnButtonPressed(object sender, ButtonPressedEventArgs e)
+        private void OnButtonsChanged(object sender, ButtonsChangedEventArgs e)
         {
-            // Forward input to the handler and consumes it while the tooltip is active.
-            // Intercept keyboard input while the tooltip is active so numbers don't change the actively equipped item etc.
-            // TODO: remove null checks if these events are only called subscribed when it's valid
-            switch (this.CurrentMenuHandler?.HandleInput(e.Button))
+            if (StackSplitX.ToggleKey.Exists(item => item.JustPressed()))
             {
-                case EInputHandled.Handled:
-                    // Obey unless we're hitting 'cancel' keys.
-                    if (e.Button != SButton.Escape)
-                        this.Helper.Input.Suppress(e.Button);
-                    else
-                        this.CurrentMenuHandler.CloseSplitMenu();
-                    break;
-
-                case EInputHandled.Consumed:
-                    this.Helper.Input.Suppress(e.Button);
-                    break;
-
-                case EInputHandled.NotHandled:
-                    if (e.Button == SButton.MouseLeft || e.Button == SButton.MouseRight)
-                        this.CurrentMenuHandler.CloseSplitMenu(); // click wasn't handled meaning the split menu no longer has focus and should be closed.
-                    break;
+                this.Monitor.Log($"before{LogExtensions.ToJson(e.Pressed)} {LogExtensions.ToJson(e.Held)} {LogExtensions.ToJson(e.Released)} {this.CurrentMenuHandler?.HandleStatus}");
+                this.CurrentMenuHandler?.HandleSplitMenu();
+                this.Monitor.Log($"after {LogExtensions.ToJson(e.Pressed)} {LogExtensions.ToJson(e.Held)} {LogExtensions.ToJson(e.Released)} {this.CurrentMenuHandler?.HandleStatus}");
+                // 阻止原有按键逻辑
+                foreach (var item in e.Pressed)
+                {
+                    this.Helper.Input.Suppress(item);
+                }
+                foreach (var item in e.Held)
+                {
+                    this.Helper.Input.Suppress(item);
+                }
             }
         }
+
 
         /// <summary>Raised after the game state is updated (≈60 times per second).</summary>
         /// <param name="sender">The event sender.</param>
